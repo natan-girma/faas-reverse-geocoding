@@ -26,6 +26,41 @@ The number of decimal places in geographic coordinates determines the accuracy o
 | 5              | ±1 metre         |
 | 6              | ±10 centimetres  |
 
+## Local Reverse Geocoding (City & Country)
+
+This service now supports a local reverse geocoding endpoint that returns the nearest city and country for a given latitude and longitude, using the [GeoNames cities500 dataset](https://download.geonames.org/export/dump/).
+
+### Data Setup
+
+Before running the service, download the GeoNames data:
+
+```sh
+bash scripts/download_geonames.sh
+```
+
+This will place `cities500.txt` in the `data/` directory.
+
+### API Usage
+
+Query the local reverse geocoding endpoint:
+
+```
+GET /reverse-geocode?lat=LATITUDE&lon=LONGITUDE
+```
+
+**Response:**
+```json
+{
+  "city": "CityName",
+  "country": "CountryCode"
+}
+```
+
+Example:
+```
+curl "http://localhost:8080/reverse-geocode?lat=48.8566&lon=2.3522"
+```
+
 ## Deployment
 
 ### Helm Chart

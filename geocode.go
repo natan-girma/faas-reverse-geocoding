@@ -55,6 +55,7 @@ func main() {
 
 	r := http.NewServeMux()
 	r.HandleFunc("/", loggingMiddleware(handlers.LatitudeLongitude))
+	r.HandleFunc("/reverse-geocode", loggingMiddleware(handlers.ReverseGeocodeHandler))
 	r.Handle("/metrics", promhttp.Handler())
 
 	srv := &http.Server{
