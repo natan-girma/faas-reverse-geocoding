@@ -3,7 +3,13 @@ LABEL maintainer="Said Sef <saidsef@gmail.com> (saidsef.co.uk/)"
 
 WORKDIR /app
 COPY . /app/
-RUN apk add --no-cache curl git && \
+RUN apk add --no-cache curl git wget unzip && \
+    mkdir -p data && \
+    if [ ! -f data/cities500.txt ]; then \
+        wget -P data/ -N https://download.geonames.org/export/dump/cities500.zip && \
+        unzip -o data/cities500.zip -d data/ && \
+        rm data/cities500.zip; \
+    fi && \
     go get -v && \
     go build -v -o /app/ ./...
 
@@ -14,6 +20,7 @@ ENV PORT=${PORT:-8080}
 USER nobody
 
 COPY --from=builder /app/faas-reverse-geocoding /usr/bin/
+COPY --from=builder /app/data/cities500.txt /data/cities500.txt
 
 HEALTHCHECK --interval=60s --timeout=10s CMD curl --fail 'http://localhost:${PORT}/' || exit 1
 

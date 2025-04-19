@@ -5,6 +5,7 @@ import (
 	"errors"
 	"math"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
@@ -18,9 +19,9 @@ type City struct {
 }
 
 var (
-	cities []City
+	cities   []City
 	loadOnce sync.Once
-	loadErr error
+	loadErr  error
 )
 
 // LoadCities loads cities from the GeoNames cities500.txt file.
@@ -60,10 +61,42 @@ func LoadCities(path string) error {
 // FindNearestCity returns the city and country nearest to the given lat/lon.
 func FindNearestCity(lat, lon float64) (string, string, error) {
 	if len(cities) == 0 {
-		if err := LoadCities("data/cities500.txt"); err != nil {
-			return "", "", err
+		// Try to load the cities file from various possible locations
+		possiblePaths := []string{
+			os.Getenv("CITIES_DATA_PATH"),      // First check environment variable
+			"/data/cities500.txt",              // Docker container path
+			"data/cities500.txt",               // Local relative path
+			"./data/cities500.txt",             // Explicit local path
+			filepath.Join("..", "data", "cities500.txt"), // One directory up
+		}
+		
+		// Filter out empty paths (like when env var is not set)
+		var pathsToTry []string
+		for _, p := range possiblePaths {
+			if p != "" {
+				pathsToTry = append(pathsToTry, p)
+			}
+		}
+		
+		// Try each path until one works
+		var lastErr error
+		for _, path := range pathsToTry {
+			err := LoadCities(path)
+			if err == nil {
+				break // Successfully loaded
+			}
+			lastErr = err
+		}
+		
+		// If we still have no cities, return the last error
+		if len(cities) == 0 {
+			if lastErr != nil {
+				return "", "", lastErr
+			}
+			return "", "", errors.New("failed to load cities data from any location")
 		}
 	}
+	
 	minDist := math.MaxFloat64
 	var nearest City
 	for _, c := range cities {
